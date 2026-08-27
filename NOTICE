@@ -1,0 +1,14 @@
+Open5GS + UERANSIM on Kubernetes
+Copyright 2026 Doğukan Sağlık and Alperen Gül
+
+This project orchestrates and documents third-party open-source software. It does
+not redistribute the upstream Helm charts or container images.
+
+Open5GS: https://github.com/open5gs/open5gs
+UERANSIM: https://github.com/aligungr/UERANSIM
+Gradiant 5G Charts: https://github.com/Gradiant/5g-charts
+Towards5GS Helm: https://github.com/Orange-OpenSource/towards5gs-helm
+Kubernetes: https://github.com/kubernetes/kubernetes
+Helm: https://github.com/helm/helm
+
+Each upstream project remains governed by its own copyright and license terms.

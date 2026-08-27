@@ -1,0 +1,89 @@
+# 5G-only Open5GS lab profile for Gradiant's open5gs chart 2.3.4.
+# The subscriber values below are public demonstration credentials.
+
+populate:
+  enabled: true
+  initCommands:
+    - >-
+      open5gs-dbctl add_ue_with_apn
+      999700000000001
+      465B5CE8B199B49FAA5F0A2EE238A6BC
+      E8ED289DEBA952E4283B54E88E6183CA
+      internet
+
+mongodb:
+  enabled: true
+  auth:
+    enabled: false
+
+amf:
+  enabled: true
+  config:
+    guamiList:
+      - plmn_id:
+          mcc: "999"
+          mnc: "70"
+        amf_id:
+          region: 2
+          set: 1
+    taiList:
+      - plmn_id:
+          mcc: "999"
+          mnc: "70"
+        tac: [1]
+    plmnList:
+      - plmn_id:
+          mcc: "999"
+          mnc: "70"
+        s_nssai:
+          - sst: 1
+    networkName: Open5GS Lab
+
+smf:
+  enabled: true
+  config:
+    pcrf:
+      enabled: false
+
+upf:
+  enabled: true
+
+webui:
+  enabled: true
+
+ausf:
+  enabled: true
+bsf:
+  enabled: true
+nrf:
+  enabled: true
+nssf:
+  enabled: true
+pcf:
+  enabled: true
+  mongodb:
+    enabled: false
+scp:
+  enabled: true
+  mongodb:
+    enabled: false
+sepp:
+  enabled: false
+udm:
+  enabled: true
+udr:
+  enabled: true
+  mongodb:
+    enabled: false
+
+# Disable EPC-only functions for a smaller 5G SA lab.
+hss:
+  enabled: false
+mme:
+  enabled: false
+pcrf:
+  enabled: false
+sgwc:
+  enabled: false
+sgwu:
+  enabled: false

@@ -1,0 +1,36 @@
+name: Validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
+
+      - name: Install linters
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes shellcheck
+          python -m pip install --disable-pip-version-check yamllint
+
+      - name: Validate shell scripts
+        run: shellcheck scripts/*.sh
+
+      - name: Validate YAML
+        run: yamllint values .github/workflows
+
+      - name: Check required files
+        run: |
+          test -s README.md
+          test -s LICENSE
+          test -s NOTICE
+          test -s SECURITY.md
