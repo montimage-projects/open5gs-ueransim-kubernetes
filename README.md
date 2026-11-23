@@ -130,6 +130,48 @@ kubectl port-forward -n open5gs svc/open5gs-webui 9999:9999
 
 Then visit `http://localhost:9999`. Change the upstream default WebUI credentials immediately if the service is ever exposed beyond localhost.
 
+## Traffic monitoring with MMT
+
+The [Montimage Monitoring Tool](https://github.com/Montimage) can observe the AMF and UPF traffic. Deploy it after the lab is up:
+
+```bash
+./scripts/deploy-mmt.sh   # or: make mmt
+```
+
+The script:
+
+1. Installs the local `mmt` chart as release `mmt` in the `mmt` namespace. The chart contains MMT-Operator, its MongoDB (`mmt-database`), Kafka and ZooKeeper.
+2. Waits for the Kafka broker to accept connections.
+3. Upgrades the `open5gs` release with [`values/open5gs-mmt-probe.yaml`](values/open5gs-mmt-probe.yaml). This adds an `mmt-probe` sidecar to the AMF pod (probe ID `1`) and the UPF pod (probe ID `2`). Each probe captures on the pod's `eth0` and sends reports to `kafka.mmt.svc.cluster.local:30092`, topic `mmt-reports`. MMT-Operator reads that topic.
+4. Restarts the SMF, gNB and UE when the AMF or UPF pod was replaced, so that registration and the PDU session recover.
+
+```mermaid
+flowchart LR
+    subgraph open5gs
+        AMF[AMF + mmt-probe]
+        UPF[UPF + mmt-probe]
+    end
+    subgraph mmt
+        K[Kafka] --- Z[ZooKeeper]
+        OP[MMT-Operator] --> DB[(mmt-database)]
+    end
+    AMF -->|reports| K
+    UPF -->|reports| K
+    K -->|mmt-reports| OP
+```
+
+Open the MMT-Operator GUI and inspect the probes:
+
+```bash
+kubectl port-forward -n mmt svc/mmt-operator 8080:8080   # or: make mmt-ui
+kubectl logs -n open5gs deploy/open5gs-amf -c mmt-probe
+kubectl logs -n open5gs deploy/open5gs-upf -c mmt-probe
+```
+
+Set `MMT_NAMESPACE` or `MMT_RELEASE` to change the target. The probe image, Kafka port, topic and capture filter are under `global.mmtProbe` in the overlay values file.
+
+`scripts/deploy.sh` applies only `values/open5gs.yaml`. Re-running it therefore removes the probes. Run `scripts/deploy-mmt.sh` again afterwards to restore them. `./scripts/teardown-mmt.sh` (`make mmt-teardown`) removes the sidecars, the `mmt` release and its namespace, and leaves the lab running.
+
 ## Repository layout
 
 ```text
@@ -139,14 +181,19 @@ Then visit `http://localhost:9999`. Change the upstream default WebUI credential
 |   |-- architecture.md             # Protocol and component map
 |   |-- lab-notes.md                # Evidence captured in the original lab
 |   `-- troubleshooting.md          # Failure patterns and fixes
+|-- mmt/                            # MMT chart: operator, MongoDB, Kafka, ZooKeeper
 |-- scripts/
 |   |-- cluster-up.sh               # Minikube bootstrap
 |   |-- deploy.sh                   # Idempotent Helm deployment
+|   |-- deploy-mmt.sh               # MMT back end + AMF/UPF probe sidecars
 |   |-- preflight.sh                # Dependency and context checks
 |   |-- teardown.sh                 # Explicit cleanup
+|   |-- teardown-mmt.sh             # Remove MMT and the probe sidecars
+|   |-- upgrade-open5gs.sh          # Open5GS upgrade + dependent restarts
 |   `-- verify.sh                   # End-to-end validation
 |-- values/
 |   |-- open5gs.yaml                # 5G-only core and subscriber
+|   |-- open5gs-mmt-probe.yaml      # MMT-Probe sidecars for AMF and UPF
 |   `-- ueransim.yaml               # gNB and UE settings
 `-- Makefile
 ```

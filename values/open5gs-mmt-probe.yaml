@@ -1,0 +1,64 @@
+# Overlay for values/open5gs.yaml that injects an MMT-Probe sidecar into the
+# AMF and UPF pods. Applied by scripts/deploy-mmt.sh; never use it alone.
+#
+# A sidecar shares the pod network namespace, so capturing on eth0 sees all
+# N2/SBI traffic of the AMF and all N3/N4/N6 traffic of the UPF. Each probe
+# streams its reports to the Kafka broker deployed by the mmt chart, where
+# MMT-Operator consumes them.
+#
+# The Gradiant subcharts render `sidecars` through `tpl`, so the shared
+# settings below are referenced from `global`, which every subchart can see.
+# scripts/deploy-mmt.sh overrides global.mmtProbe.kafkaHost to follow
+# MMT_NAMESPACE.
+
+global:
+  mmtProbe:
+    image: ghcr.io/montimage/mmt-probe:v1.6.5
+    kafkaHost: kafka.mmt.svc.cluster.local
+    kafkaPort: 30092
+    kafkaTopic: mmt-reports
+    # Skip the probe's own report stream to Kafka, otherwise every report
+    # would generate more captured traffic.
+    pcapFilter: not tcp port 30092
+
+amf:
+  sidecars:
+    - name: mmt-probe
+      image: "{{ .Values.global.mmtProbe.image }}"
+      args:
+        - "-ieth0"
+        - "-Xprobe-id=1"
+        - "-Xkafka-output.enable=true"
+        - "-Xkafka-output.hostname={{ .Values.global.mmtProbe.kafkaHost }}"
+        - "-Xkafka-output.port={{ .Values.global.mmtProbe.kafkaPort }}"
+        - "-Xkafka-output.topic={{ .Values.global.mmtProbe.kafkaTopic }}"
+        - "-Xsession-report.output-channel=kafka"
+        - "-Xinput.pcap-filter={{ .Values.global.mmtProbe.pcapFilter }}"
+      securityContext:
+        capabilities:
+          add: ["NET_RAW", "NET_ADMIN"]
+      resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+
+upf:
+  sidecars:
+    - name: mmt-probe
+      image: "{{ .Values.global.mmtProbe.image }}"
+      args:
+        - "-ieth0"
+        - "-Xprobe-id=2"
+        - "-Xkafka-output.enable=true"
+        - "-Xkafka-output.hostname={{ .Values.global.mmtProbe.kafkaHost }}"
+        - "-Xkafka-output.port={{ .Values.global.mmtProbe.kafkaPort }}"
+        - "-Xkafka-output.topic={{ .Values.global.mmtProbe.kafkaTopic }}"
+        - "-Xsession-report.output-channel=kafka"
+        - "-Xinput.pcap-filter={{ .Values.global.mmtProbe.pcapFilter }}"
+      securityContext:
+        capabilities:
+          add: ["NET_RAW", "NET_ADMIN"]
+      resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi

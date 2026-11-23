@@ -1,0 +1,37 @@
+
+---
+# 1. MongoDB
+
+---
+# 1.5 MongoDB service
+apiVersion: v1
+kind: Service
+metadata:
+  name: mmt-database
+  labels:
+    app: mmt-database
+spec:
+  type: ClusterIP
+  selector:
+    app: mmt-database
+  ports:
+    - name: mongo
+      port: 27017
+      targetPort: 27017
+      protocol: TCP
+      
+---
+
+# 1.4 MongoDB pod (replaces Deployment)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mmt-database
+  labels:
+    app: mmt-database
+spec:
+  containers:
+    - name: mmt-database
+      image: mongo:xenial
+      ports:
+        - containerPort: 27017

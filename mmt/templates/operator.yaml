@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mmt-operator
+  labels:
+    app: mmt-operator
+spec:
+  containers:
+    - name: mmt-operator
+      image: ghcr.io/montimage/mmt-operator:v1.7.6
+      imagePullPolicy: Always
+      args:
+        - "-Xprobe_analysis_mode=online"
+        - "-Xdatabase_server.host=mmt-database"
+        - "-Xinput_mode=kafka"
+        - "-Xkafka_input={}"
+        - "-Xkafka_input.host=kafka.{{ .Release.Namespace }}.svc.cluster.local"
+        - "-Xkafka_input.port=30092"
+        - "-Xkafka_input.topic=mmt-reports"
+        - '-Xmodules=["link", "network", "dpi", "application", "security", "gnodeb"]'
+      ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+      resources:
+        requests:
+          memory: "512Mi"
+          cpu: "250m"
+          
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: mmt-operator
+  name: mmt-operator
+spec:
+  ports:
+  - port: 8080
+    protocol: TCP
+    targetPort: 8080
+    nodePort: {{ .Values.operator.externalPort }}
+  selector:
+    app: mmt-operator
+  type: NodePort
