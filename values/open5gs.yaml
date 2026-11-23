@@ -47,6 +47,18 @@ smf:
 
 upf:
   enabled: true
+  # The headless PFCP service publishes not-ready addresses, so a rolling
+  # update would briefly expose old and new UPF IPs and the SMF could bind
+  # both. Recreate guarantees a single UPF address.
+  updateStrategy:
+    type: Recreate
+  services:
+    pfcp:
+      # Headless: the SMF must reach the UPF pod IP directly. Through a
+      # ClusterIP, conntrack rewrites the SMF source port (it collides with
+      # the UPF->SMF heartbeat flow) and the UPF rejects PFCP requests with
+      # "Cannot find PFCP-Node", leaving sessions without forwarding rules.
+      clusterIP: None
 
 webui:
   enabled: true
