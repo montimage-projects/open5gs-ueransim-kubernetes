@@ -7,3 +7,5 @@
 Thumbs.db
 /.project
 /.externalToolBuilders/
+*.so
+*.so.c

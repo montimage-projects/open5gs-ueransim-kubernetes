@@ -168,6 +168,27 @@ kubectl logs -n open5gs deploy/open5gs-amf -c mmt-probe
 kubectl logs -n open5gs deploy/open5gs-upf -c mmt-probe
 ```
 
+### Security rules for the AMF probe
+
+The AMF probe runs with `-Xsecurity.enable=true` and loads its rules from [`mmt/security-rules`](mmt/security-rules) on the host. Kubernetes can only mount directories of the Minikube node, so the directory reaches the probe in two steps:
+
+```text
+host: <repo>/mmt/security-rules
+  -> Minikube node: /mmt/security-rules        (bind mount, scripts/cluster-up.sh)
+    -> mmt-probe in the AMF pod: /opt/mmt/security/rules   (hostPath volume, read-only)
+```
+
+- Minikube applies the node mount only when it creates the cluster. For a cluster created before this change, `scripts/deploy-mmt.sh` stops with a message. Recreate the cluster with `DELETE_CLUSTER=true ./scripts/teardown.sh`, then run `cluster-up.sh`, `deploy.sh` and `deploy-mmt.sh`. This also discards the images cached on the node.
+- The mount replaces the image's built-in `/opt/mmt/security/rules`. Only the rules in `mmt/security-rules` are active.
+- Changes to the directory appear in the container immediately, but the probe reads its rules only at startup. To reload them, restart only the probe container. Its process is PID 1, so this assumes the image provides `kill`:
+
+  ```bash
+  kubectl exec -n open5gs deploy/open5gs-amf -c mmt-probe -- kill 1
+  ```
+
+  The kubelet restarts the sidecar alone. The AMF container keeps running, so the gNB and UE are unaffected.
+- `MMT_RULES_DIR` (host directory, `cluster-up.sh` only) and `MMT_RULES_NODE_DIR` (node directory, both scripts) override the defaults.
+
 Set `MMT_NAMESPACE` or `MMT_RELEASE` to change the target. The probe image, Kafka port, topic and capture filter are under `global.mmtProbe` in the overlay values file.
 
 `scripts/deploy.sh` applies only `values/open5gs.yaml`. Re-running it therefore removes the probes. Run `scripts/deploy-mmt.sh` again afterwards to restore them. `./scripts/teardown-mmt.sh` (`make mmt-teardown`) removes the sidecars, the `mmt` release and its namespace, and leaves the lab running.

@@ -13,6 +13,11 @@ NAMESPACE="${NAMESPACE:-open5gs}"
 OPEN5GS_RELEASE="${OPEN5GS_RELEASE:-open5gs}"
 MMT_NAMESPACE="${MMT_NAMESPACE:-mmt}"
 MMT_RELEASE="${MMT_RELEASE:-mmt}"
+PROFILE="${PROFILE:-open5gs-lab}"
+# Node directory holding the MMT security rules, bind-mounted from the host's
+# mmt/security-rules by scripts/cluster-up.sh. The AMF probe mounts it at
+# /opt/mmt/security/rules.
+MMT_RULES_NODE_DIR="${MMT_RULES_NODE_DIR:-/mmt/security-rules}"
 TIMEOUT="${TIMEOUT:-20m}"
 KAFKA_WAIT_SECONDS="${KAFKA_WAIT_SECONDS:-300}"
 
@@ -21,6 +26,18 @@ repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 
 if ! helm status "${OPEN5GS_RELEASE}" --namespace "${NAMESPACE}" >/dev/null 2>&1; then
   echo "Helm release ${OPEN5GS_RELEASE} not found in ${NAMESPACE}. Run scripts/deploy.sh first." >&2
+  exit 1
+fi
+
+# Without the node directory the AMF pod would hang in ContainerCreating.
+if ! minikube ssh --profile "${PROFILE}" -- test -d "${MMT_RULES_NODE_DIR}" >/dev/null 2>&1; then
+  cat >&2 <<EOF
+The Minikube node of profile ${PROFILE} has no ${MMT_RULES_NODE_DIR} directory.
+scripts/cluster-up.sh bind-mounts the host's mmt/security-rules there, but
+Minikube only applies a mount when it creates the cluster. Recreate it:
+  DELETE_CLUSTER=true ./scripts/teardown.sh
+  ./scripts/cluster-up.sh && ./scripts/deploy.sh && ./scripts/deploy-mmt.sh
+EOF
   exit 1
 fi
 
@@ -51,7 +68,8 @@ echo 'Kafka is reachable.'
 # 2. MMT-Probe sidecars in the AMF and UPF pods.
 "${repo_root}/scripts/upgrade-open5gs.sh" \
   --values "${repo_root}/values/open5gs-mmt-probe.yaml" \
-  --set-string "global.mmtProbe.kafkaHost=kafka.${MMT_NAMESPACE}.svc.cluster.local"
+  --set-string "global.mmtProbe.kafkaHost=kafka.${MMT_NAMESPACE}.svc.cluster.local" \
+  --set-string "global.mmtProbe.securityRulesNodeDir=${MMT_RULES_NODE_DIR}"
 
 kubectl get pods --namespace "${MMT_NAMESPACE}" -o wide
 kubectl get pods --namespace "${NAMESPACE}" -o wide \

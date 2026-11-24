@@ -44,10 +44,10 @@ if [[ "${restart_pfcp}" == true ]]; then
     --namespace "${NAMESPACE}" --timeout "${TIMEOUT}"
 fi
 
-helm repo add towards5gs \
-  https://raw.githubusercontent.com/Orange-OpenSource/towards5gs-helm/main/repo/ \
-  --force-update
-helm repo update towards5gs
+#helm repo add towards5gs \
+#  https://raw.githubusercontent.com/Orange-OpenSource/towards5gs-helm/main/repo/ \
+#  --force-update
+#helm repo update towards5gs
 
 helm upgrade --install "${UERANSIM_RELEASE}" towards5gs/ueransim \
   --namespace "${NAMESPACE}" \

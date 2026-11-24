@@ -20,8 +20,17 @@ global:
     # Skip the probe's own report stream to Kafka, otherwise every report
     # would generate more captured traffic.
     pcapFilter: not tcp port 30092 and not ip6
+    # Minikube node directory holding the MMT security rules. scripts/
+    # cluster-up.sh bind-mounts the host's mmt/security-rules here; the AMF
+    # probe mounts it at /opt/mmt/security/rules (replacing the image's rules).
+    securityRulesNodeDir: /mmt/security-rules
 
 amf:
+  extraVolumes:
+    - name: mmt-security-rules
+      hostPath:
+        path: "{{ .Values.global.mmtProbe.securityRulesNodeDir }}"
+        type: Directory
   sidecars:
     - name: mmt-probe
       image: "{{ .Values.global.mmtProbe.image }}"
@@ -39,7 +48,12 @@ amf:
         - "-Xsession-report.ssl=false"
         - "-Xsession-report.rtp=false"
         - "-Xsession-report.ftp=false"
+        - "-Xsecurity.enable=true"
         - "-Xinput.pcap-filter={{ .Values.global.mmtProbe.pcapFilter }}"
+      volumeMounts:
+        - name: mmt-security-rules
+          mountPath: /opt/mmt/security/rules
+          readOnly: true
       securityContext:
         capabilities:
           add: ["NET_RAW", "NET_ADMIN"]
