@@ -1,2 +1,7 @@
 operator:
   externalPort: 30000
+
+# Applied to every pod of this chart. IfNotPresent reuses images already on
+# the node, so redeploying does not pull them again. Note that the kafka and
+# zookeeper "edge" tags are mutable: set Always to pick up a newer image.
+imagePullPolicy: IfNotPresent

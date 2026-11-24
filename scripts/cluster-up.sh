@@ -3,7 +3,7 @@ set -Eeuo pipefail
 
 PROFILE="${PROFILE:-open5gs-lab}"
 CPUS="${CPUS:-4}"
-MEMORY="${MEMORY:-2048}"
+MEMORY="${MEMORY:-3048}"
 KUBERNETES_VERSION="${KUBERNETES_VERSION:-stable}"
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"

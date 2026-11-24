@@ -25,6 +25,7 @@ spec:
   containers:
     - name: zookeeper
       image: ubuntu/zookeeper:edge
+      imagePullPolicy: {{ .Values.imagePullPolicy }}
       ports:
         - containerPort: 2181
           name: client
@@ -59,6 +60,7 @@ spec:
   containers:
     - name: kafka
       image: ubuntu/kafka:edge
+      imagePullPolicy: {{ .Values.imagePullPolicy }}
       env:
         - name: ZOOKEEPER_HOST
           value: zookeeper

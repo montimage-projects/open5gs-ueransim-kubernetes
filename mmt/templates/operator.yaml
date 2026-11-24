@@ -7,8 +7,8 @@ metadata:
 spec:
   containers:
     - name: mmt-operator
-      image: ghcr.io/montimage/mmt-operator:v1.7.6
-      imagePullPolicy: Always
+      image: ghcr.io/montimage/mmt-operator:v1.7.8
+      imagePullPolicy: {{ .Values.imagePullPolicy }}
       args:
         - "-Xprobe_analysis_mode=online"
         - "-Xdatabase_server.host=mmt-database"

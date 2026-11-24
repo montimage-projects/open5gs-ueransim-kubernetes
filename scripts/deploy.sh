@@ -59,9 +59,13 @@ helm upgrade --install "${UERANSIM_RELEASE}" towards5gs/ueransim \
 # The towards5gs chart only accepts a literal gtpIp. With 0.0.0.0 the gNB
 # advertises 0.0.0.0 as its N3 address and the UPF sends downlink GTP-U to
 # itself. Substitute the pod IP at container start instead.
+# The chart also gives no pull policy for its wait-amf init container, whose
+# image is tagged latest and therefore defaults to Always: every gNB restart
+# would download it again. Pin it to IfNotPresent.
 gnb_deployment="${UERANSIM_RELEASE}-gnb"
 gnb_config="/ueransim/config/gnb-config.yaml"
 kubectl patch deployment "${gnb_deployment}" -n "${NAMESPACE}" --type=json -p "[
+  {\"op\": \"add\", \"path\": \"/spec/template/spec/initContainers/0/imagePullPolicy\", \"value\": \"IfNotPresent\"},
   {\"op\": \"add\", \"path\": \"/spec/template/spec/containers/0/env\",
    \"value\": [{\"name\": \"POD_IP\", \"valueFrom\": {\"fieldRef\": {\"fieldPath\": \"status.podIP\"}}}]},
   {\"op\": \"replace\", \"path\": \"/spec/template/spec/containers/0/command\", \"value\": [\"/bin/sh\", \"-c\"]},

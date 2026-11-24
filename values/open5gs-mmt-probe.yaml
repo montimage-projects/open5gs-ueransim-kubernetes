@@ -19,12 +19,13 @@ global:
     kafkaTopic: mmt-reports
     # Skip the probe's own report stream to Kafka, otherwise every report
     # would generate more captured traffic.
-    pcapFilter: not tcp port 30092
+    pcapFilter: not tcp port 30092 and not ip6
 
 amf:
   sidecars:
     - name: mmt-probe
       image: "{{ .Values.global.mmtProbe.image }}"
+      imagePullPolicy: IfNotPresent
       args:
         - "-ieth0"
         - "-Xprobe-id=1"
@@ -33,6 +34,11 @@ amf:
         - "-Xkafka-output.port={{ .Values.global.mmtProbe.kafkaPort }}"
         - "-Xkafka-output.topic={{ .Values.global.mmtProbe.kafkaTopic }}"
         - "-Xsession-report.output-channel=kafka"
+        - "-Xsession-report.gtp=true"
+        - "-Xsession-report.http=false"
+        - "-Xsession-report.ssl=false"
+        - "-Xsession-report.rtp=false"
+        - "-Xsession-report.ftp=false"
         - "-Xinput.pcap-filter={{ .Values.global.mmtProbe.pcapFilter }}"
       securityContext:
         capabilities:
@@ -46,6 +52,7 @@ upf:
   sidecars:
     - name: mmt-probe
       image: "{{ .Values.global.mmtProbe.image }}"
+      imagePullPolicy: IfNotPresent
       args:
         - "-ieth0"
         - "-Xprobe-id=2"
@@ -54,6 +61,11 @@ upf:
         - "-Xkafka-output.port={{ .Values.global.mmtProbe.kafkaPort }}"
         - "-Xkafka-output.topic={{ .Values.global.mmtProbe.kafkaTopic }}"
         - "-Xsession-report.output-channel=kafka"
+        - "-Xsession-report.gtp=true"
+        - "-Xsession-report.http=false"
+        - "-Xsession-report.ssl=false"
+        - "-Xsession-report.rtp=false"
+        - "-Xsession-report.ftp=false"
         - "-Xinput.pcap-filter={{ .Values.global.mmtProbe.pcapFilter }}"
       securityContext:
         capabilities:
