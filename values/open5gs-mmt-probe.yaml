@@ -49,6 +49,7 @@ amf:
         - "-Xsession-report.rtp=false"
         - "-Xsession-report.ftp=false"
         - "-Xsecurity.enable=true"
+        - "-Xsecurity.output-channel=kafka"
         - "-Xinput.pcap-filter={{ .Values.global.mmtProbe.pcapFilter }}"
       volumeMounts:
         - name: mmt-security-rules
